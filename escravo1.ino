@@ -1,12 +1,12 @@
-int inputPin = 3;
-int outputPin = 5;
+int inputPin = 2;
+int outputPin = 8;
 int flag[8] = { 0, 1, 1, 1, 1, 1, 1, 0 };
 int flagLength = sizeof(flag) / sizeof(flag[0]);
 bool openFlag = true;
-int auxRead[] = {};
-int receivedData[] = {};
-uint64_t receiverCounter = 0;
-uint64_t auxCounter = 0;
+bool syncFlag = false;
+int auxRead[8];
+int receivedData[8];
+int auxCounter = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -14,13 +14,17 @@ void setup() {
   pinMode(inputPin, INPUT);
 }
 
-void fillArray(int i) {
-  if (i > 7) {
-    Serial.println();
+void fillArray() {
+  if (auxCounter >= 7) {
+    syncFlag = syncFlag ? true : sync(flag, flag);
+    // Serial.println();
+    auxCounter = 0;
   } else {
-    auxRead[i] = digitalRead(inputPin);
-    // Serial.print(auxRead[i]);
-    // Serial.print(",");
+    auxRead[auxCounter] = digitalRead(inputPin);
+    //Serial.print(auxRead[auxCounter]);
+    //Serial.print(",");
+    auxCounter++;
+    delay(10);
   }
 }
 
@@ -32,24 +36,32 @@ bool sync(int flag[], int auxRead[]) {
   }
   return true;
 }
-
-void receiver(int receiverCounter, int auxCounter) {
-  fillArray(auxCounter);
-  Serial.println(auxCounter);
-  bool syncFlag = syncFlag ? true : sync(flag, auxRead);
-
-  if (syncFlag) {
-    receivedData[receiverCounter] = digitalRead(inputPin);
-    receiverCounter++;
+void printReceivedData() {
+  for (int i = 0; i < 8; i++) {
+    Serial.print(receivedData[i]);
   }
+  Serial.println();
 }
 
 
+void receiver() {
+  fillArray();
+  if (syncFlag) {
+    // Serial.println("Inicio sincronizado com sucesso!");
+    if (auxCounter == 7) {
+      Serial.println();
+
+    } else {
+      receivedData[auxCounter] = digitalRead(inputPin);
+      Serial.print(receivedData[auxCounter]);
+
+      delay(10);
+    }
+  }
+}
+
 void loop() {
-  //int leitura = digitalRead(inputPin);
-  //digitalWrite(outputPin, leitura);
-  receiver(receiverCounter, auxCounter);
-  delay(1000);
-  //Serial.println(auxCounter);
-  auxCounter = auxCounter>7 ? 0 : auxCounter+1;
+  int leitura = digitalRead(inputPin);
+  digitalWrite(outputPin, leitura);
+  receiver();
 }
