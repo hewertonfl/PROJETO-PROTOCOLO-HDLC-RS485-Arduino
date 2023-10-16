@@ -6,7 +6,7 @@ int dataLength = sizeof(data) / sizeof(data[0]);
 const int flagLength = 8;
 int flag[flagLength] = { 0, 1, 1, 1, 1, 1, 1, 0 };
 
-// Definição do vetor master adress
+// Definição do vetor adress de destino
 const int adressLength = 8;
 int adress[adressLength] = [1, 1, 0, 0, 0, 0, 0, 0]
 
@@ -38,5 +38,6 @@ void sender(int data[], int dataLength) {
 // Loop principal
 void loop() {
   sender(flag, flagLength);
+  sender(adress, adressLength);
   sender(data, dataLength);
 }
