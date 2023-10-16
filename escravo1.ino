@@ -7,6 +7,9 @@ bool syncFlag = false;
 int auxRead[8];
 int receivedData[8];
 int auxCounter = 0;
+int timeClock = 100;
+int syncCounter = 0;
+int counter = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -15,16 +18,16 @@ void setup() {
 }
 
 void fillArray() {
-  if (auxCounter >= 7) {
-    syncFlag = syncFlag ? true : sync(flag, flag);
-    // Serial.println();
+  if (auxCounter >= flagLength) {
+    syncFlag = syncFlag ? true : sync(flag, auxRead);
+    //Serial.println();
     auxCounter = 0;
   } else {
     auxRead[auxCounter] = digitalRead(inputPin);
     //Serial.print(auxRead[auxCounter]);
     //Serial.print(",");
     auxCounter++;
-    delay(10);
+    delay(timeClock);
   }
 }
 
@@ -45,18 +48,19 @@ void printReceivedData() {
 
 
 void receiver() {
-  fillArray();
-  if (syncFlag) {
-    // Serial.println("Inicio sincronizado com sucesso!");
-    if (auxCounter == 7) {
-      Serial.println();
-
-    } else {
-      receivedData[auxCounter] = digitalRead(inputPin);
-      Serial.print(receivedData[auxCounter]);
-
-      delay(10);
+  if (!syncFlag){
+    fillArray();
     }
+  if (syncFlag) {
+      receivedData[counter] = digitalRead(inputPin);
+      if(counter<8){
+        counter=counter + 1;
+      } else{
+        printReceivedData();
+        counter = 0;
+      }
+      delay(timeClock);
+   // }
   }
 }
 
