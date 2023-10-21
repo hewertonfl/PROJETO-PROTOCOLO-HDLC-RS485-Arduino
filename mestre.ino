@@ -12,7 +12,7 @@ int adress[adressLength] = {1, 1, 0, 0, 0, 0, 0, 0};
 
 // Definição do vetor de controle de dados
 const int controlLength = 8;
-int control[controlLength];
+int control[controlLength]= {0, 0, 0, 0, 0, 0, 0, 1};
 
 // Definição do vetor de CRC
 const int crcLength = 8;
@@ -31,7 +31,7 @@ void setup() {
 void sender(int data[], int dataLength) {
   for (int i = 0; i < dataLength; i++) {
     digitalWrite(outputPin, data[i]);
-    delay(100);
+    delay(10);
   }
 }
 
@@ -39,5 +39,6 @@ void sender(int data[], int dataLength) {
 void loop() {
   sender(flag, flagLength);
   sender(adress, adressLength);
+  sender(control, controlLength);
   sender(data, dataLength);
 }
