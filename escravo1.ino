@@ -14,11 +14,9 @@ int adress[adressLength] = { 1, 1, 0, 0, 0, 0, 0, 0 };
 // Definição da flag de sincronização
 bool syncFlag = false;
 
-// Definição do vetor de dados auxiliar de comparação
-int auxRead[8] = {};
-
 // Definição do vetor de dados recebidos
-int receivedData[16] = {};
+const int receivedDataLength = 24;
+int receivedData[receivedDataLength];
 
 // Contador auxiliar
 int auxCounter = 0;
@@ -40,12 +38,12 @@ void setup() {
 // Função de preenchimento do vetor auxiliar
 void fillArray() {
   if (auxCounter >= flagLength) {
-    syncFlag = syncFlag ? true : sync(flag, auxRead);
+    syncFlag = syncFlag ? true : sync(flag, receivedData);
     Serial.println();
     auxCounter = 0;
   } else {
-    auxRead[auxCounter] = digitalRead(inputPin);
-    Serial.print(auxRead[auxCounter]);
+    receivedData[auxCounter] = digitalRead(inputPin);
+    Serial.print(receivedData[auxCounter]);
     Serial.print(",");
     auxCounter++;
     delay(timeClock);
@@ -80,6 +78,7 @@ bool checkAdress(int adress[], int receivedData[]) {
   return true;
 }
 
+// Função de preenchimento do vetor de dados
 void fillReceivedData(int receivedDataLength) {
   int counter = 0;
   while (counter < receivedDataLength) {
@@ -96,12 +95,19 @@ void receiver() {
   }
   if (!stopFlag) {
     if (syncFlag) {
+      Serial.print("OpenFlag: ");
+      printReceivedData(8);
       fillReceivedData(8);
       stopFlag = checkAdress(adress, receivedData);
       if (stopFlag) {
-        fillReceivedData(16);
-        Serial.println("Data received: ");
-        printReceivedData(16);
+        Serial.print("Adress: ");
+        printReceivedData(8);
+        fillReceivedData(receivedDataLength);
+        Serial.print("Data received: ");
+        printReceivedData(receivedDataLength);
+        fillReceivedData(8);
+        Serial.print("CloseFlag: ");
+        printReceivedData(8);
       } else {
         Serial.println("A msg não é para mim");
       }
