@@ -15,7 +15,7 @@ int adress[adressLength] = { 1, 1, 0, 0, 0, 0, 0, 0 };
 bool syncFlag = false;
 
 // Definição do vetor de dados recebidos
-const int receivedDataLength = 24;
+const int receivedDataLength = 16;
 int receivedData[receivedDataLength];
 
 // Contador auxiliar
@@ -101,6 +101,9 @@ void receiver() {
       stopFlag = checkAdress(adress, receivedData);
       if (stopFlag) {
         Serial.print("Adress: ");
+        printReceivedData(8);
+        Serial.print("Control: ");
+        fillReceivedData(8);
         printReceivedData(8);
         fillReceivedData(receivedDataLength);
         Serial.print("Data received: ");
