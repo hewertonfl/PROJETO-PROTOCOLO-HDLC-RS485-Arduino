@@ -5,7 +5,7 @@ const int outputPin = 8;
 // Definição do vetor de flag
 int flag[8] = { 0, 1, 1, 1, 1, 1, 1, 0 };
 int flagLength = sizeof(flag) / sizeof(flag[0]);
-bool openFlag = true;
+bool stopFlag = false;
 
 // Definição do adress
 const int adressLength = 8;
@@ -18,7 +18,7 @@ bool syncFlag = false;
 int auxRead[8] = {};
 
 // Definição do vetor de dados recebidos
-int receivedData[8] = {};
+int receivedData[16] = {};
 
 // Contador auxiliar
 int auxCounter = 0;
@@ -63,21 +63,30 @@ bool sync(int flag[], int auxRead[]) {
 }
 
 // Função de impressão dos dados recebidos
-void printReceivedData() {
-  for (int i = 0; i < 8; i++) {
+void printReceivedData(int arrayLength) {
+  for (int i = 0; i < arrayLength; i++) {
     Serial.print(receivedData[i]);
   }
   Serial.println();
 }
 
 // Função de checagem de endereço
-int checkAdress(int adress[], int receivedData[]) {
+bool checkAdress(int adress[], int receivedData[]) {
   for (int i = 0; i < adressLength; i++) {
     if (adress[i] != receivedData[i]) {
-      return 0;
+      return false;
     }
   }
-  return 1;
+  return true;
+}
+
+void fillReceivedData(int receivedDataLength) {
+  int counter = 0;
+  while (counter < receivedDataLength) {
+    receivedData[counter] = digitalRead(inputPin);
+    counter++;
+    delay(timeClock);
+  }
 }
 
 // Função de recebimento de dados
@@ -85,17 +94,18 @@ void receiver() {
   if (!syncFlag) {
     fillArray();
   }
-  if (syncFlag) {
-    //Serial.println("Sincronizou");
-    if (counter < 8) {
-      receivedData[counter] = digitalRead(inputPin);
-      counter = counter + 1;
-    } else if (checkAdress(adress,receivedData)){
-      printReceivedData(); 
-    }else{
-      Serial.println("A msg n é pra mim");
+  if (!stopFlag) {
+    if (syncFlag) {
+      fillReceivedData(8);
+      stopFlag = checkAdress(adress, receivedData);
+      if (stopFlag) {
+        fillReceivedData(16);
+        Serial.println("Data received: ");
+        printReceivedData(16);
+      } else {
+        Serial.println("A msg não é para mim");
+      }
     }
-    delay(timeClock);
   }
 }
 
