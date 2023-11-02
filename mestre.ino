@@ -1,3 +1,8 @@
+// ********************* Definição dos pinos ********************* //
+int outputPin = 2;
+const int inputPin = 8;
+
+// ****************** Definição de vetores de bits **************** //
 // Definição do vetor de dados
 const int dataLength = 8;
 int data[dataLength] = { 1, 0, 0, 1, 0, 1, 1, 1 };
@@ -18,24 +23,14 @@ int control[controlLength] = { 0, 0, 0, 0, 0, 0, 0, 1 };
 const int crcLength = 8;
 int crc[crcLength];
 
+// Definição do vetor de dados final
 const int finalDataLength = crcLength + dataLength;
 int finalData[finalDataLength];
-
-// Definição do pino de saída
-int outputPin = 2;
 
 // Tempo de recepção de bit
 const int timeClock = 10;
 
-// Configuração inicial do Arduino
-void setup() {
-  Serial.begin(9600);
-  pinMode(outputPin, OUTPUT);
-  int checksum = calculateChecksum(data, 8);
-  checksumToBinaryArray(checksum, crc, crcLength);
-  concatenateArrays(crc, data, crcLength, dataLength);
-}
-
+// Função de impressão de vetor
 void printArray(int array[], int arrayLength) {
   for (int i = 0; i < arrayLength; i++) {
     Serial.print(array[i]);
@@ -51,16 +46,17 @@ void sender(int data[], int dataLength) {
   }
 }
 
+// Função de cálculo do checksum
 uint16_t calculateChecksum(int data[], int length) {
   uint16_t checksum = 0;
 
   for (int i = 0; i < length; i++) {
     checksum += data[i];
   }
-
   return checksum;
 }
 
+// Função de conversão do checksum para binário
 void checksumToBinaryArray(uint16_t checksum, int crc[], int crcLength) {
   Serial.print("CRC: ");
   for (int i = crcLength - 1; i >= 0; i--) {
@@ -70,6 +66,7 @@ void checksumToBinaryArray(uint16_t checksum, int crc[], int crcLength) {
   Serial.println();
 }
 
+// Função de concatenação de vetores
 void concatenateArrays(int array1[], int array2[], int size1, int size2) {
   // Copie os elementos do primeiro array para o vetor final
   int counter = 0;
@@ -86,6 +83,14 @@ void concatenateArrays(int array1[], int array2[], int size1, int size2) {
   printArray(finalData, finalDataLength);
 }
 
+// Configuração inicial do Arduino
+void setup() {
+  Serial.begin(9600);
+  pinMode(outputPin, OUTPUT);
+  int checksum = calculateChecksum(data, 8);
+  checksumToBinaryArray(checksum, crc, crcLength);
+  concatenateArrays(crc, data, crcLength, dataLength);
+}
 
 // Loop principal
 void loop() {
