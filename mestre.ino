@@ -1,6 +1,6 @@
 // ********************* Definição dos pinos ********************* //
-int outputPin = 2;
-const int inputPin = 8;
+const int outputPin = 2;
+const int inputPin = 23;
 
 // ****************** Definição de vetores de bits **************** //
 // Definição do vetor de dados
@@ -13,7 +13,7 @@ int flag[flagLength] = { 0, 1, 1, 1, 1, 1, 1, 0 };
 
 // Definição do vetor adress de destino
 const int adressLength = 8;
-int adress[adressLength] = { 1, 1, 0, 0, 0, 0, 0, 0 };
+int adress[adressLength] = { 1, 1, 0, 0, 0, 0, 0, 1};
 
 // Definição do vetor de controle de dados
 const int controlLength = 8;
@@ -26,6 +26,9 @@ int crc[crcLength];
 // Definição do vetor de dados final
 const int finalDataLength = crcLength + dataLength;
 int finalData[finalDataLength];
+// Definição do vetor de dados recebidos
+const int receivedDataLength = 16;
+int receivedData[receivedDataLength];
 
 // Tempo de recepção de bit
 const int timeClock = 10;
@@ -37,13 +40,24 @@ void printArray(int array[], int arrayLength) {
   }
   Serial.println();
 }
+// ***************************** Flags **************************** //
+// Definição de status de print
+bool printStatus = false;
 
 // Remetente
 void sender(int data[], int dataLength) {
   for (int i = 0; i < dataLength; i++) {
     digitalWrite(outputPin, data[i]);
-    delay(timeClock);
+    delay(timeClock);89
   }
+}
+
+void sendFrame() {
+  sender(flag, flagLength);
+  sender(adress, adressLength);
+  sender(control, controlLength);
+  sender(finalData, finalDataLength);
+  sender(flag, flagLength);
 }
 
 // Função de cálculo do checksum
@@ -83,6 +97,16 @@ void concatenateArrays(int array1[], int array2[], int size1, int size2) {
   printArray(finalData, finalDataLength);
 }
 
+// Função de preenchimento do vetor de dados
+void fillReceivedData(int receivedDataLength) {
+  int counter = 0;
+  while (counter < receivedDataLength) {
+    receivedData[counter] = digitalRead(inputPin);
+    counter++;
+    delay(timeClock);
+  }
+}
+
 // Configuração inicial do Arduino
 void setup() {
   Serial.begin(9600);
@@ -94,9 +118,15 @@ void setup() {
 
 // Loop principal
 void loop() {
-  sender(flag, flagLength);
-  sender(adress, adressLength);
-  sender(control, controlLength);
-  sender(finalData, finalDataLength);
-  sender(flag, flagLength);
+  fillReceivedData(receivedDataLength);
+  if (receivedData[7] && receivedData[6] && receivedData[5] && receivedData[4] && !printStatus) {
+    Serial.println("Data status: Good!");
+    printStatus = true;
+  } else if (receivedData[0] && receivedData[1] && receivedData[2] && receivedData[3] && !printStatus) {
+    Serial.println("Data status: Lixo!");
+    sendFrame();
+    printStatus = false;
+  } else {
+    sendFrame();
+  }
 }
