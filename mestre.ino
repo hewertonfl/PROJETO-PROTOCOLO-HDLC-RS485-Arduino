@@ -117,13 +117,13 @@ void setup() {
 void selectAdress(int option){
   if(option == 1){
     int adress[adressLength] = { 1, 1, 0, 0, 0, 0, 0, 1};
-    int checksum = calculateChecksum(data, 8);
+    int checksum = calculateChecksum(data, 8)+calculateChecksum(adress, 8)+calculateChecksum(control, 8);
     checksumToBinaryArray(checksum, crc, crcLength);
     concatenateArrays(crc, data, crcLength, dataLength);
     sendFrame(adress);
   }else if(option == 2){
     int adress[adressLength] = { 1, 1, 0, 0, 0, 0, 0, 1};
-    int checksum = calculateChecksum(data, 8);
+    int checksum = calculateChecksum(data, 8)+calculateChecksum(adress, 8)+calculateChecksum(control, 8);
     checksumToBinaryArray(checksum, crc, crcLength);
     concatenateArrays(crc, data, crcLength, dataLength);
     sendFrame(adress);
