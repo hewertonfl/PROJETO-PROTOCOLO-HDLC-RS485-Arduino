@@ -48,11 +48,11 @@ bool printStatus = false;
 void sender(int data[], int dataLength) {
   for (int i = 0; i < dataLength; i++) {
     digitalWrite(outputPin, data[i]);
-    delay(timeClock);89
+    delay(timeClock);
   }
 }
 
-void sendFrame() {
+void sendFrame(int adress[]) {
   sender(flag, flagLength);
   sender(adress, adressLength);
   sender(control, controlLength);
@@ -111,22 +111,42 @@ void fillReceivedData(int receivedDataLength) {
 void setup() {
   Serial.begin(9600);
   pinMode(outputPin, OUTPUT);
-  int checksum = calculateChecksum(data, 8);
-  checksumToBinaryArray(checksum, crc, crcLength);
-  concatenateArrays(crc, data, crcLength, dataLength);
 }
 
+
+void selectAdress(int option){
+  if(option == 1){
+    int adress[adressLength] = { 1, 1, 0, 0, 0, 0, 0, 1};
+    int checksum = calculateChecksum(data, 8);
+    checksumToBinaryArray(checksum, crc, crcLength);
+    concatenateArrays(crc, data, crcLength, dataLength);
+    sendFrame(adress);
+  }else if(option == 2){
+    int adress[adressLength] = { 1, 1, 0, 0, 0, 0, 0, 1};
+    int checksum = calculateChecksum(data, 8);
+    checksumToBinaryArray(checksum, crc, crcLength);
+    concatenateArrays(crc, data, crcLength, dataLength);
+    sendFrame(adress);
+  } else if (option == 3){
+    Serial.println("Em construção");
+  }
+}
 // Loop principal
 void loop() {
-  fillReceivedData(receivedDataLength);
-  if (receivedData[7] && receivedData[6] && receivedData[5] && receivedData[4] && !printStatus) {
-    Serial.println("Data status: Good!");
-    printStatus = true;
-  } else if (receivedData[0] && receivedData[1] && receivedData[2] && receivedData[3] && !printStatus) {
-    Serial.println("Data status: Lixo!");
-    sendFrame();
-    printStatus = false;
-  } else {
-    sendFrame();
+  if(!digitalRead(inputPin)){
+    selectAdress(1);
+  }else{
+    Serial.println("Estou escutando");
   }
+  // fillReceivedData(receivedDataLength);
+  // if (receivedData[7] && receivedData[6] && receivedData[5] && receivedData[4] && !printStatus) {
+  //   Serial.println("Data status: Good!");
+  //   printStatus = true;
+  // } else if (receivedData[0] && receivedData[1] && receivedData[2] && receivedData[3] && !printStatus) {
+  //   Serial.println("Data status: Lixo!");
+  //   sendFrame();
+  //   printStatus = false;
+  // } else {
+  //   sendFrame();
+  // }
 }
