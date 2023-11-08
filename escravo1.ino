@@ -1,6 +1,6 @@
 // ********************* Definição dos pinos ********************* //
 const int inputPin = 2;
-const int outputPin = 8;
+const int outputPin = 23;
 
 
 // ****************** Definição de vetores de bits **************** //
@@ -10,15 +10,17 @@ int flag[flagLength] = { 0, 1, 1, 1, 1, 1, 1, 0 };
 
 // Definição do adress
 const int adressLength = 8;
-int adress[adressLength] = { 1, 1, 0, 0, 0, 0, 0, 1 };
+int myAdress[adressLength] = { 1, 1, 0, 0, 0, 0, 0, 1 };
 
 // Definição do vetor de dados recebidos
 const int receivedDataLength = 24;
 int receivedData[receivedDataLength];
 
+
+
 // Definição do vetor de controle de dados
 const int controlLength = 8;
-int control[controlLength];
+int control[controlLength] = { 0, 0, 0, 0, 1, 1, 1, 1 };
 
 // Definição do vetor de CRC
 const int crcLength = 8;
@@ -27,7 +29,7 @@ int crc[crcLength];
 // ************************** Contadores ***************************** //
 // Contagem de sincronização
 int counter = 0;
-
+int checksum = 0;
 // Contador auxiliar
 int auxCounter = 0;
 
@@ -36,6 +38,9 @@ int auxCounter = 0;
 bool stopFlag = false;
 // Definição da flag de sincronização
 bool syncFlag = false;
+bool executou = false;
+bool sendingStatus = false;
+bool crcFlag = false;
 
 // Tempo de recepção de bit
 const int timeClock = 10;
@@ -51,17 +56,12 @@ bool sync(int array[], int auxRead[], int length) {
   return true;
 }
 
-void copyArray(int source[], int destination[], int length) {
-  for (int i = 0; i < length; i++) {
-    destination[i] = source[i];
-  }
-}
-
 // Função de preenchimento do vetor auxiliar
 void fillArray() {
   if (auxCounter >= flagLength) {
     syncFlag = syncFlag ? true : sync(flag, receivedData, flagLength);
     Serial.println();
+    delay(timeClock);
     auxCounter = 0;
   } else {
     receivedData[auxCounter] = digitalRead(inputPin);
@@ -93,7 +93,7 @@ void fillReceivedData(int receivedDataLength) {
   while (counter < receivedDataLength) {
     receivedData[counter] = digitalRead(inputPin);
     counter++;
-    delay(timeClock);
+    delay(10);
   }
 }
 
@@ -128,58 +128,84 @@ void receiver() {
   if (!stopFlag) {
     if (syncFlag) {
       Serial.print("OpenFlag: ");
-      printReceivedData(receivedData,0, flagLength);
+      printReceivedData(receivedData, 0, flagLength);
       fillReceivedData(8);
+      checksum += calculateChecksum(receivedData, 0, 8);
+
       // Checa se a mensagem é para mim
-      stopFlag = sync(adress, receivedData, adressLength);
+      stopFlag = sync(myAdress, receivedData, adressLength);
       if (stopFlag) {
         Serial.print("Adress: ");
         printReceivedData(receivedData, 0, adressLength);
         Serial.print("Control: ");
         fillReceivedData(8);
         printReceivedData(receivedData, 0, controlLength);
+        checksum += calculateChecksum(receivedData, 0, 8);
+
         // Checagem de erros
         fillReceivedData(receivedDataLength);
-        int checksum = calculateChecksum(receivedData, crcLength, receivedDataLength-flagLength);
+        checksum += calculateChecksum(receivedData, crcLength, receivedDataLength - flagLength);
         checksumToBinaryArray(checksum, crc, crcLength);
-        bool crcFlag = sync(crc, receivedData, crcLength);
-        bool sendingStatus = false;
+        //crc[0]=1;
+        crcFlag = sync(crc, receivedData, crcLength);
+
         if (crcFlag) {
           Serial.println("CRC checked succeed!");
           Serial.println("Data status: Good!");
+
           // Print dos dados recebidos
           Serial.print("Data received: ");
-          printReceivedData(receivedData, 0,receivedDataLength-flagLength);
+          printReceivedData(receivedData, 0, receivedDataLength - flagLength);
+
           // Print da closeFlag
           Serial.print("CloseFlag: ");
-          printReceivedData(receivedData, receivedDataLength-flagLength,receivedDataLength);
-          int control[controlLength] = { 0, 0, 0, 0, 1, 1, 1, 1 };
-          if (!sendingStatus) {
-            sender(control, controlLength);
-          }
+          digitalWrite(outputPin, 1);
+          printReceivedData(receivedData, receivedDataLength - flagLength, receivedDataLength);
+
+
         } else {
           Serial.println("CRC error check!");
           Serial.println("Data Status: Bad!");
-          digitalWrite(outputPin, 0);
-          int control[controlLength] = { 1, 1, 1, 1, 0, 0, 0, 0 };
-          sender(control, controlLength);
+          digitalWrite(outputPin, 1);
+          stopFlag = true;
         }
+        sendingStatus = true;
       } else {
         Serial.println("A msg não é para mim");
+        checksum = 0;
       }
     }
   }
 }
+
+// Função de impressão de vetor
+void printArray(int array[], int arrayLength) {
+  for (int i = 0; i < arrayLength; i++) {
+    Serial.print(array[i]);
+  }
+  Serial.println();
+}
+
+
+
 // Configuração inicial do slave
 void setup() {
   Serial.begin(115200);
-  //pinMode(outputPin, OUTPUT);
   pinMode(inputPin, INPUT);
+  pinMode(outputPin, OUTPUT);
 }
 
 // Loop principal
 void loop() {
-  //int leitura = digitalRead(inputPin);
-  //digitalWrite(outputPin, leitura);
-  receiver();
+  if (!sendingStatus) {
+    receiver();
+  } else if (crcFlag) {
+    pinMode(inputPin,INPUT_PULLDOWN);
+    int control[controlLength] = { 1, 0, 0, 0, 1, 1, 1, 0 };
+    sender(control, controlLength);
+  } else {
+    pinMode(inputPin,INPUT_PULLDOWN);
+    int control[controlLength] = { 1, 0, 0, 0, 1, 1, 1, 1 };
+    sender(control, controlLength);
+  }
 }

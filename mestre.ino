@@ -1,6 +1,6 @@
 // ********************* Definição dos pinos ********************* //
 const int outputPin = 2;
-const int inputPin = 23;
+const int inputPin = 8;
 
 // ****************** Definição de vetores de bits **************** //
 // Definição do vetor de dados
@@ -13,7 +13,7 @@ int flag[flagLength] = { 0, 1, 1, 1, 1, 1, 1, 0 };
 
 // Definição do vetor adress de destino
 const int adressLength = 8;
-int adress[adressLength] = { 1, 1, 0, 0, 0, 0, 0, 1};
+int adress[adressLength] = { 1, 1, 0, 0, 0, 0, 0, 1 };
 
 // Definição do vetor de controle de dados
 const int controlLength = 8;
@@ -27,11 +27,12 @@ int crc[crcLength];
 const int finalDataLength = crcLength + dataLength;
 int finalData[finalDataLength];
 // Definição do vetor de dados recebidos
-const int receivedDataLength = 16;
+const int receivedDataLength = 8;
 int receivedData[receivedDataLength];
 
 // Tempo de recepção de bit
 const int timeClock = 10;
+int status = 0;
 
 // Função de impressão de vetor
 void printArray(int array[], int arrayLength) {
@@ -43,21 +44,30 @@ void printArray(int array[], int arrayLength) {
 // ***************************** Flags **************************** //
 // Definição de status de print
 bool printStatus = false;
-
+bool response = false;
 // Remetente
 void sender(int data[], int dataLength) {
   for (int i = 0; i < dataLength; i++) {
     digitalWrite(outputPin, data[i]);
+    //Serial.print(data[i]);
     delay(timeClock);
   }
+  //Serial.println();
 }
 
+
 void sendFrame(int adress[]) {
+  // if (status == 0) {
   sender(flag, flagLength);
+  //   status = digitalRead(inputPin) ? status + 1 : 0;
+
+  // } else {
+  //   digitalWrite(outputPin, 1);
   sender(adress, adressLength);
   sender(control, controlLength);
   sender(finalData, finalDataLength);
   sender(flag, flagLength);
+  // }
 }
 
 // Função de cálculo do checksum
@@ -72,12 +82,12 @@ uint16_t calculateChecksum(int data[], int length) {
 
 // Função de conversão do checksum para binário
 void checksumToBinaryArray(uint16_t checksum, int crc[], int crcLength) {
-  Serial.print("CRC: ");
+  //Serial.print("CRC: ");
   for (int i = crcLength - 1; i >= 0; i--) {
     crc[i] = (checksum >> i) & 0x01;
-    Serial.print(crc[i]);
+    //Serial.print(crc[i]);
   }
-  Serial.println();
+  //Serial.println();
 }
 
 // Função de concatenação de vetores
@@ -93,8 +103,8 @@ void concatenateArrays(int array1[], int array2[], int size1, int size2) {
   for (int i = 0; i < size2; i++) {
     finalData[size1 + i] = array2[i];
   }
-  Serial.print("Final data: ");
-  printArray(finalData, finalDataLength);
+  //Serial.print("Final data: ");
+  //printArray(finalData, finalDataLength);
 }
 
 // Função de preenchimento do vetor de dados
@@ -103,50 +113,52 @@ void fillReceivedData(int receivedDataLength) {
   while (counter < receivedDataLength) {
     receivedData[counter] = digitalRead(inputPin);
     counter++;
-    delay(timeClock);
+    delay(10);
   }
 }
 
 // Configuração inicial do Arduino
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   pinMode(outputPin, OUTPUT);
+  pinMode(inputPin, INPUT);
 }
 
 
-void selectAdress(int option){
-  if(option == 1){
-    int adress[adressLength] = { 1, 1, 0, 0, 0, 0, 0, 1};
-    int checksum = calculateChecksum(data, 8)+calculateChecksum(adress, 8)+calculateChecksum(control, 8);
+void selectAdress(int option) {
+  if (option == 1) {
+    int adress[adressLength] = { 1, 1, 0, 0, 0, 0, 0, 1 };
+    int checksum = calculateChecksum(data, 8) + calculateChecksum(adress, 8) + calculateChecksum(control, 8);
     checksumToBinaryArray(checksum, crc, crcLength);
     concatenateArrays(crc, data, crcLength, dataLength);
     sendFrame(adress);
-  }else if(option == 2){
-    int adress[adressLength] = { 1, 1, 0, 0, 0, 0, 0, 1};
-    int checksum = calculateChecksum(data, 8)+calculateChecksum(adress, 8)+calculateChecksum(control, 8);
+  } else if (option == 2) {
+    int adress[adressLength] = { 1, 1, 0, 0, 0, 0, 0, 1 };
+    int checksum = calculateChecksum(data, 8) + calculateChecksum(adress, 8) + calculateChecksum(control, 8);
     checksumToBinaryArray(checksum, crc, crcLength);
     concatenateArrays(crc, data, crcLength, dataLength);
     sendFrame(adress);
-  } else if (option == 3){
+  } else if (option == 3) {
     Serial.println("Em construção");
   }
 }
 // Loop principal
 void loop() {
-  if(!digitalRead(inputPin)){
+  if (!digitalRead(inputPin)) {
     selectAdress(1);
-  }else{
+  } else if (!response) {
+    pinMode(inputPin,INPUT_PULLUP);
     Serial.println("Estou escutando");
+    fillReceivedData(8);
+    //printArray(receivedData, 8);
+    if (receivedData[0] && !receivedData[1] && !receivedData[2] && !receivedData[3] && receivedData[4] && receivedData[5] && receivedData[6] && !receivedData[7]) {
+      Serial.println("Data status: Good!");
+      printArray(receivedData, 8);
+      response = true;
+    } else if (receivedData[0] && !receivedData[1] && !receivedData[2] && !receivedData[3] && receivedData[4] && receivedData[5] && receivedData[6] && receivedData[7]) {
+      Serial.println("Data status: Bad!");
+      printArray(receivedData, 8);
+      response = true;
+    }
   }
-  // fillReceivedData(receivedDataLength);
-  // if (receivedData[7] && receivedData[6] && receivedData[5] && receivedData[4] && !printStatus) {
-  //   Serial.println("Data status: Good!");
-  //   printStatus = true;
-  // } else if (receivedData[0] && receivedData[1] && receivedData[2] && receivedData[3] && !printStatus) {
-  //   Serial.println("Data status: Lixo!");
-  //   sendFrame();
-  //   printStatus = false;
-  // } else {
-  //   sendFrame();
-  // }
 }
