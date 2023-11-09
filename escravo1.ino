@@ -7,6 +7,7 @@ const int outputPin = 23;
 // Definição do vetor de flag
 const int flagLength = 8;
 int flag[flagLength] = { 0, 1, 1, 1, 1, 1, 1, 0 };
+int counterSender = 0;
 
 // Definição do adress
 const int adressLength = 8;
@@ -41,6 +42,7 @@ bool syncFlag = false;
 bool executou = false;
 bool sendingStatus = false;
 bool crcFlag = false;
+bool resetFlag = false;
 
 // Tempo de recepção de bit
 const int timeClock = 10;
@@ -54,21 +56,6 @@ bool sync(int array[], int auxRead[], int length) {
     }
   }
   return true;
-}
-
-// Função de preenchimento do vetor auxiliar
-void fillArray() {
-  if (auxCounter >= flagLength) {
-    syncFlag = syncFlag ? true : sync(flag, receivedData, flagLength);
-    Serial.println();
-    delay(timeClock);
-    auxCounter = 0;
-  } else {
-    receivedData[auxCounter] = digitalRead(inputPin);
-    Serial.print(receivedData[auxCounter]);
-    auxCounter++;
-    delay(timeClock);
-  }
 }
 
 // Remetente
@@ -150,7 +137,7 @@ void receiver() {
       fillReceivedData(receivedDataLength);
       checksum += calculateChecksum(receivedData, crcLength, receivedDataLength - flagLength);
       checksumToBinaryArray(checksum, crc, crcLength);
-      crc[0]=1;
+      crc[0] = 1;
       crcFlag = sync(crc, receivedData, crcLength);
 
       if (crcFlag) {
@@ -181,6 +168,7 @@ void receiver() {
       Serial.println("Status: sending response...");
     } else {
       Serial.println("A msg não é para mim");
+      syncFlag = false;
       checksum = 0;
     }
   }
@@ -198,11 +186,11 @@ void printArray(int array[], int arrayLength) {
 void reset() {
   stopFlag = false;
   syncFlag = false;
-  executou = false;
   sendingStatus = false;
   crcFlag = false;
-  pinMode(inputPin, INPUT);
-  pinMode(outputPin, OUTPUT);
+  resetFlag = false;
+  //pinMode(inputPin, INPUT);
+  //pinMode(outputPin, OUTPUT);
   digitalWrite(outputPin, 0);
 }
 
@@ -218,6 +206,7 @@ void setup() {
 void loop() {
   if (!sendingStatus) {
     receiver();
+    counterSender = 0;
   } else if (crcFlag && !digitalRead(inputPin)) {
     pinMode(inputPin, INPUT_PULLUP);
     int control[controlLength] = { 1, 0, 0, 0, 1, 1, 1, 0 };
@@ -225,9 +214,14 @@ void loop() {
   } else if (!digitalRead(inputPin)) {
     pinMode(inputPin, INPUT_PULLUP);
     int control[controlLength] = { 1, 0, 0, 0, 1, 1, 1, 1 };
-    sender(control, controlLength);
-  } 
-//   else {
-//    reset();
-//  }
+    for(int i = 0; i<40;i++){sender(control, controlLength);}
+    pinMode(inputPin, INPUT);
+    resetFlag = true;
+    counterSender++;
+    Serial.println(counterSender);
+  }
+
+  else if (digitalRead(inputPin) && resetFlag) {
+   reset();
+ }
 }
