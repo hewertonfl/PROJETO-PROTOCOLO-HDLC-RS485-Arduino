@@ -45,6 +45,7 @@ void printArray(int array[], int arrayLength) {
 // Definição de status de print
 bool printStatus = false;
 bool response = false;
+bool dataStatus = false;
 // Remetente
 void sender(int data[], int dataLength) {
   for (int i = 0; i < dataLength; i++) {
@@ -57,17 +58,11 @@ void sender(int data[], int dataLength) {
 
 
 void sendFrame(int adress[]) {
-  // if (status == 0) {
   sender(flag, flagLength);
-  //   status = digitalRead(inputPin) ? status + 1 : 0;
-
-  // } else {
-  //   digitalWrite(outputPin, 1);
   sender(adress, adressLength);
   sender(control, controlLength);
   sender(finalData, finalDataLength);
   sender(flag, flagLength);
-  // }
 }
 
 // Função de cálculo do checksum
@@ -144,21 +139,25 @@ void selectAdress(int option) {
 }
 // Loop principal
 void loop() {
-  if (!digitalRead(inputPin)) {
-    selectAdress(1);
-  } else if (!response) {
-    pinMode(inputPin,INPUT_PULLUP);
-    Serial.println("Estou escutando");
-    fillReceivedData(8);
-    //printArray(receivedData, 8);
-    if (receivedData[0] && !receivedData[1] && !receivedData[2] && !receivedData[3] && receivedData[4] && receivedData[5] && receivedData[6] && !receivedData[7]) {
-      Serial.println("Data status: Good!");
-      printArray(receivedData, 8);
-      response = true;
-    } else if (receivedData[0] && !receivedData[1] && !receivedData[2] && !receivedData[3] && receivedData[4] && receivedData[5] && receivedData[6] && receivedData[7]) {
-      Serial.println("Data status: Bad!");
-      printArray(receivedData, 8);
-      response = true;
+  if (!dataStatus) {
+    if (!digitalRead(inputPin)) {
+      Serial.println("Status: sending frame...");
+      selectAdress(1);
+    } else {
+      //if (!response) {
+      pinMode(inputPin, INPUT_PULLUP);
+      Serial.println("Status: receiving response...");
+      fillReceivedData(8);
+      if (receivedData[0] && !receivedData[1] && !receivedData[2] && !receivedData[3] && receivedData[4] && receivedData[5] && receivedData[6] && !receivedData[7]) {
+        Serial.println("Data status: Good!");
+        printArray(receivedData, 8);
+        dataStatus = true;
+      } else if (receivedData[0] && !receivedData[1] && !receivedData[2] && !receivedData[3] && receivedData[4] && receivedData[5] && receivedData[6] && receivedData[7]) {
+        Serial.println("Data status: Bad!");
+        printArray(receivedData, 8);
+        dataStatus = false;
+        pinMode(inputPin, INPUT);
+      }
     }
   }
 }

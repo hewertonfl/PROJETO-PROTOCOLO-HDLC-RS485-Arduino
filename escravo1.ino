@@ -88,29 +88,31 @@ void printReceivedData(int array[], int start, int arrayLength) {
 }
 
 // Função de preenchimento do vetor de dados
-void fillReceivedData(int receivedDataLength) {
+void fillReceivedData(int receivedDataLength, bool print = false) {
   int counter = 0;
   while (counter < receivedDataLength) {
     receivedData[counter] = digitalRead(inputPin);
+    if (print) { Serial.print(receivedData[counter]); }
     counter++;
     delay(10);
   }
+  if (print) { Serial.println(); }
 }
 
 // Função de cálculo do checksum
 uint16_t calculateChecksum(int data[], int crcLength, int receivedDataLength) {
   uint16_t checksum = 0;
-  Serial.print("Checksum: ");
+  //Serial.print("Checksum: ");
   for (int i = crcLength; i < receivedDataLength; i++) {
     checksum += data[i];
   }
-  Serial.println(checksum);
+  //Serial.println(checksum);
   return checksum;
 }
 
 // Função de conversão do checksum para binário
 void checksumToBinaryArray(uint16_t checksum, int crc[], int crcLength) {
-  Serial.print("CRC: ");
+  Serial.print("Calculated CRC: ");
   int counter = 0;
   for (int i = crcLength - 1; i >= 0; i--) {
     crc[counter] = (checksum >> i) & 0x01;
@@ -122,61 +124,68 @@ void checksumToBinaryArray(uint16_t checksum, int crc[], int crcLength) {
 
 // Função de recebimento de dados
 void receiver() {
-  if (!syncFlag) {
-    fillArray();
-  }
   if (!stopFlag) {
-    if (syncFlag) {
-      Serial.print("OpenFlag: ");
-      printReceivedData(receivedData, 0, flagLength);
+    fillReceivedData(8, true);
+    syncFlag = syncFlag ? true : sync(flag, receivedData, flagLength);
+    if (!syncFlag) {
+      delay(timeClock);
+      return;
+    }
+    Serial.print("OpenFlag: ");
+    printReceivedData(receivedData, 0, flagLength);
+    delay(8 * timeClock);
+    fillReceivedData(8);
+    checksum += calculateChecksum(receivedData, 0, 8);
+
+    // Checa se a mensagem é para mim
+    if (bool address = sync(myAdress, receivedData, adressLength)) {
+      Serial.print("Adress: ");
+      printReceivedData(receivedData, 0, adressLength);
+      Serial.print("Control: ");
       fillReceivedData(8);
+      printReceivedData(receivedData, 0, controlLength);
       checksum += calculateChecksum(receivedData, 0, 8);
 
-      // Checa se a mensagem é para mim
-      stopFlag = sync(myAdress, receivedData, adressLength);
-      if (stopFlag) {
-        Serial.print("Adress: ");
-        printReceivedData(receivedData, 0, adressLength);
-        Serial.print("Control: ");
-        fillReceivedData(8);
-        printReceivedData(receivedData, 0, controlLength);
-        checksum += calculateChecksum(receivedData, 0, 8);
+      // Checagem de erros
+      fillReceivedData(receivedDataLength);
+      checksum += calculateChecksum(receivedData, crcLength, receivedDataLength - flagLength);
+      checksumToBinaryArray(checksum, crc, crcLength);
+      crc[0]=1;
+      crcFlag = sync(crc, receivedData, crcLength);
 
-        // Checagem de erros
-        fillReceivedData(receivedDataLength);
-        checksum += calculateChecksum(receivedData, crcLength, receivedDataLength - flagLength);
-        checksumToBinaryArray(checksum, crc, crcLength);
-        //crc[0]=1;
-        crcFlag = sync(crc, receivedData, crcLength);
+      if (crcFlag) {
+        Serial.println("CRC checked succeed!");
+        Serial.println("Data status: Good!");
+        Serial.print("CRC Received: ");
+        printReceivedData(receivedData, 0, flagLength);
 
-        if (crcFlag) {
-          Serial.println("CRC checked succeed!");
-          Serial.println("Data status: Good!");
+        // Print dos dados recebidos
+        Serial.print("Data received: ");
+        printReceivedData(receivedData, flagLength, receivedDataLength - flagLength);
 
-          // Print dos dados recebidos
-          Serial.print("Data received: ");
-          printReceivedData(receivedData, 0, receivedDataLength - flagLength);
-
-          // Print da closeFlag
-          Serial.print("CloseFlag: ");
-          digitalWrite(outputPin, 1);
-          printReceivedData(receivedData, receivedDataLength - flagLength, receivedDataLength);
+        // Print da closeFlag
+        Serial.print("CloseFlag: ");
+        digitalWrite(outputPin, 1);
+        printReceivedData(receivedData, receivedDataLength - flagLength, receivedDataLength);
 
 
-        } else {
-          Serial.println("CRC error check!");
-          Serial.println("Data Status: Bad!");
-          digitalWrite(outputPin, 1);
-          stopFlag = true;
-        }
-        sendingStatus = true;
       } else {
-        Serial.println("A msg não é para mim");
-        checksum = 0;
+        Serial.println("CRC error check!");
+        Serial.println("Data Status: Bad!");
+        Serial.print("CRC Received: ");
+        printReceivedData(receivedData, 0, flagLength);
+        digitalWrite(outputPin, 1);
+        stopFlag = true;
       }
+      sendingStatus = true;
+      Serial.println("Status: sending response...");
+    } else {
+      Serial.println("A msg não é para mim");
+      checksum = 0;
     }
   }
 }
+
 
 // Função de impressão de vetor
 void printArray(int array[], int arrayLength) {
@@ -186,26 +195,39 @@ void printArray(int array[], int arrayLength) {
   Serial.println();
 }
 
-
+void reset() {
+  stopFlag = false;
+  syncFlag = false;
+  executou = false;
+  sendingStatus = false;
+  crcFlag = false;
+  pinMode(inputPin, INPUT);
+  pinMode(outputPin, OUTPUT);
+  digitalWrite(outputPin, 0);
+}
 
 // Configuração inicial do slave
 void setup() {
   Serial.begin(115200);
   pinMode(inputPin, INPUT);
   pinMode(outputPin, OUTPUT);
+  digitalWrite(outputPin, 0);
 }
 
 // Loop principal
 void loop() {
   if (!sendingStatus) {
     receiver();
-  } else if (crcFlag) {
-    pinMode(inputPin,INPUT_PULLDOWN);
+  } else if (crcFlag && !digitalRead(inputPin)) {
+    pinMode(inputPin, INPUT_PULLUP);
     int control[controlLength] = { 1, 0, 0, 0, 1, 1, 1, 0 };
     sender(control, controlLength);
-  } else {
-    pinMode(inputPin,INPUT_PULLDOWN);
+  } else if (!digitalRead(inputPin)) {
+    pinMode(inputPin, INPUT_PULLUP);
     int control[controlLength] = { 1, 0, 0, 0, 1, 1, 1, 1 };
     sender(control, controlLength);
-  }
+  } 
+//   else {
+//    reset();
+//  }
 }
