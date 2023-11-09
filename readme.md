@@ -1,14 +1,14 @@
-# HDLC-RS485 Protocol with Arduino
+# HDLC-RS485 Protocol: Arduino e esp32
 
-Este repositório faz parte de um trabalho de comunicação de dados do Instituto Federal do Espirito Santo - IFES. Ele contém um projeto para implementar o protocolo HDLC-RS485 usando uma placa Arduino. O protocolo HDLC (High-Level Data Link Control) é amplamente utilizado para comunicação de dados confiável e eficiente, enquanto o RS-485 é um padrão de comunicação serial diferencial.
+Este repositório faz parte de um trabalho da disciplina de comunicação de dados do Instituto Federal do Espirito Santo - IFES. Ele contém um projeto para implementar o protocolo HDLC-RS485 usando microcontroladores. O protocolo HDLC (High-Level Data Link Control) é amplamente utilizado para comunicação de dados confiável e eficiente, enquanto o RS-485 é um padrão de comunicação serial diferencial.
 
 ## Descrição do Projeto
 
-O protocolo HDLC-RS485 é uma implementação de um protocolo de comunicação de dados serial que permite a transmissão confiável de dados entre dispositivos usando a placa Arduino. Este projeto foi desenvolvido para aplicações que requerem comunicação robusta e resistência a interferências.
+O protocolo HDLC-RS485 é uma implementação de um protocolo de comunicação de dados serial que permite a transmissão confiável de dados entre dispositivos. Este projeto foi desenvolvido para aplicações que requerem comunicação robusta e resistência a interferências.
 
 ## Recursos
 
--   Implementação do protocolo HDLC-RS485 para a placa Arduino.
+-   Implementação do protocolo HDLC-RS485 para a placa Arduino e esp32.
 -   Suporte a transmissão e recepção de dados.
 -   Compatível com a maioria dos dispositivos RS-485.
 
@@ -16,10 +16,10 @@ O protocolo HDLC-RS485 é uma implementação de um protocolo de comunicação d
 
 Antes de começar a usar este projeto, certifique-se de ter o seguinte:
 
--   Uma placa Arduino compatível.
--   Um módulo RS-485 para comunicação serial.
+-   3 placas Arduino compatíveis ou esp.
+-   Protoboard
 -   Ambiente de desenvolvimento Arduino IDE.
--   Bibliotecas e dependências necessárias (listadas no arquivo `requirements.txt`).
+-   Script desenvolvido neste repositório
 
 ## Instalação
 
@@ -34,8 +34,6 @@ git clone https://github.com/hewertonfl/hdlc-rs485-arduino.git
 3. Configure as portas seriais apropriadas e os parâmetros de comunicação no código.
 
 4. Faça o upload do código para o seu Arduino.
-
-5. Conecte os dispositivos RS-485 conforme necessário.
 
 ## Uso
 
@@ -57,10 +55,9 @@ Se você deseja contribuir para este projeto, siga estas etapas:
 
 6. Aguarde a revisão e a aprovação.
 
-## Licença
-
-Este projeto é distribuído sob a licença MIT. Consulte o arquivo [LICENSE](LICENSE) para obter mais informações.
-
 ## Contato
 
-Se você tiver dúvidas, sugestões ou precisar de assistência, entre em contato com [hewerton.fl@gmail.com].
+Se você tiver dúvidas, sugestões ou precisar de assistência, entre em contato:
+
+-   [hewerton.fl@gmail.com]
+-   [ianzotelli@gmai.com].

@@ -128,7 +128,7 @@ void selectAdress(int option) {
     concatenateArrays(crc, data, crcLength, dataLength);
     sendFrame(adress);
   } else if (option == 2) {
-    int adress[adressLength] = { 1, 1, 0, 0, 0, 0, 0, 1 };
+    int adress[adressLength] = { 1, 1, 0, 1, 1, 0, 0, 1 };
     int checksum = calculateChecksum(data, 8) + calculateChecksum(adress, 8) + calculateChecksum(control, 8);
     checksumToBinaryArray(checksum, crc, crcLength);
     concatenateArrays(crc, data, crcLength, dataLength);
@@ -142,7 +142,7 @@ void loop() {
   if (!dataStatus) {
     if (!digitalRead(inputPin)) {
       Serial.println("Status: sending frame...");
-      selectAdress(1);
+      selectAdress(2);
     } else {
       //if (!response) {
       pinMode(inputPin, INPUT_PULLUP);
