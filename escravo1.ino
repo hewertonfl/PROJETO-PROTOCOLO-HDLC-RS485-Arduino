@@ -11,7 +11,7 @@ int counterSender = 0;
 
 // Definição do adress
 const int adressLength = 8;
-int myAdress[adressLength] = { 1, 1, 0, 0, 0, 0, 0, 1 };
+int myAdress[adressLength] = { 1, 1, 0, 1, 1, 0, 0, 1 };
 
 // Definição do vetor de dados recebidos
 const int receivedDataLength = 24;
@@ -195,7 +195,7 @@ void setup() {
   Serial.begin(115200);
   pinMode(inputPin, INPUT);
   pinMode(outputPin, OUTPUT);
-  digitalWrite(outputPin, 0);
+  //digitalWrite(outputPin, 0);
 }
 
 // Loop principal
@@ -204,14 +204,14 @@ void loop() {
     receiver();
     //Checa se o status da mensagem é good
   } else if (crcFlag && !digitalRead(inputPin)) {
-    //pinMode(inputPin, INPUT_PULLUP);
+    pinMode(inputPin, INPUT_PULLDOWN);
     int control[controlLength] = { 1, 0, 0, 0, 1, 1, 1, 0 };
     sender(control, controlLength);
     //Checa se o status da mensagem é bad
   } else if (!digitalRead(inputPin)) {
-    //pinMode(inputPin, INPUT_PULLUP);
+    pinMode(inputPin, INPUT_PULLDOWN);
     int control[controlLength] = { 1, 0, 0, 0, 1, 1, 1, 1 };
-    for(int i = 0; i<10;i++){sender(control, controlLength);}
+    for(int i = 0; i<20;i++){sender(control, controlLength);}
     pinMode(inputPin, INPUT);
     resetFlag = true;
   }
