@@ -142,7 +142,7 @@ void loop() {
   if (!dataStatus) {
     if (!digitalRead(inputPin)) {
       Serial.println("Status: sending frame...");
-      selectAdress(2);
+      selectAdress(1);
     } else {
       //if (!response) {
       pinMode(inputPin, INPUT_PULLUP);

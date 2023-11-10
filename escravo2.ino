@@ -17,8 +17,6 @@ int myAdress[adressLength] = { 1, 1, 0, 1, 1, 0, 0, 1 };
 const int receivedDataLength = 24;
 int receivedData[receivedDataLength];
 
-
-
 // Definição do vetor de controle de dados
 const int controlLength = 8;
 int control[controlLength] = { 0, 0, 0, 0, 1, 1, 1, 1 };
@@ -204,17 +202,18 @@ void setup() {
 void loop() {
   if (!sendingStatus) {
     receiver();
+    //Checa se o status da mensagem é good
   } else if (crcFlag && !digitalRead(inputPin)) {
-    pinMode(inputPin, INPUT_PULLUP);
+    //pinMode(inputPin, INPUT_PULLUP);
     int control[controlLength] = { 1, 0, 0, 0, 1, 1, 1, 0 };
     sender(control, controlLength);
+    //Checa se o status da mensagem é bad
   } else if (!digitalRead(inputPin)) {
-    pinMode(inputPin, INPUT_PULLUP);
+    //pinMode(inputPin, INPUT_PULLUP);
     int control[controlLength] = { 1, 0, 0, 0, 1, 1, 1, 1 };
     for(int i = 0; i<10;i++){sender(control, controlLength);}
     pinMode(inputPin, INPUT);
     resetFlag = true;
-    counterSender++;
   }
 
   else if (digitalRead(inputPin) && resetFlag) {
